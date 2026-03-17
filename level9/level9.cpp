@@ -1,3 +1,5 @@
+#include <cstring>
+
 class N {
 public:
     virtual int operator+(N &other);
