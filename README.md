@@ -1,4 +1,4 @@
-# Rainfall — Notes d'exploitation (version propre)
+# Rainfall — Notes d'exploitation
 
 > Document de travail pour nous deux.  
 > Objectif : aller droit au but niveau par niveau, avec **faille**, **spoiler**, puis **solution**.
